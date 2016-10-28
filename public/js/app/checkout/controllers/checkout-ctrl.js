@@ -33,8 +33,8 @@ angular.module('ds.checkout')
  * is re-enabled so that the user can make changes and resubmit if needed.
  *
  * */
-    .controller('CheckoutCtrl', ['$rootScope', '$scope', '$location', '$anchorScroll', 'CheckoutSvc','cart', 'order', '$state', '$modal', 'AuthSvc', 'AccountSvc', 'AuthDialogManager', 'GlobalData', 'ShippingSvc', 'shippingZones', '$q', 'CartSvc', '$timeout',
-        function ($rootScope, $scope, $location, $anchorScroll, CheckoutSvc, cart, order, $state, $modal, AuthSvc, AccountSvc, AuthDialogManager, GlobalData, ShippingSvc, shippingZones, $q, CartSvc, $timeout) {
+    .controller('CheckoutCtrl', ['$rootScope', '$scope', '$location', '$anchorScroll', 'CheckoutSvc','cart', 'order', '$state', '$modal', 'AuthSvc', 'AccountSvc', 'AuthDialogManager', 'GlobalData', 'ShippingSvc', 'shippingZones', '$q', 'CartSvc', '$timeout', '$http',
+        function ($rootScope, $scope, $location, $anchorScroll, CheckoutSvc, cart, order, $state, $modal, AuthSvc, AccountSvc, AuthDialogManager, GlobalData, ShippingSvc, shippingZones, $q, CartSvc, $timeout, $http) {
 
             $scope.order = order;
             $scope.displayCart = false;
@@ -576,6 +576,92 @@ angular.module('ds.checkout')
                     }, 1);
                 });
             };
+
+
+
+
+            /* 
+            * weizhen.ma@tieto
+            * 2016-10-27
+            * Klarna checkout integration
+            * TODOs:
+            */
+
+            $scope.klarnaCheckout = function (shipToFormValid, billToFormValid) {
+                var deferred = $q.defer();
+                if(shipToFormValid && billToFormValid) {
+                    var shippingCostObject = angular.fromJson($scope.shippingCost);
+                    submitKlarnaCart($scope.cart);
+                }
+            }
+
+
+            function submitKlarnaCart(cartObject) {
+                    var body = klarnaParseCart(cartObject);
+                    var request = $http({
+                        method: 'post',
+                        url: '/api/klarnacall',
+                        params: {
+                        },
+                        data: body
+                    });
+                    return( request.then( klarnarRender, klarnaHandleError ) );
+            }
+
+
+            function klarnaParseCart(cartObject){
+                    var cart = {
+                    merchant_reference: {
+                        orderid1: '',
+                        orderid2: ''
+                    },
+                    purchase_country: 'se',
+                    purchase_currency: 'sek',
+                    locale: 'sv-se',
+                    cart: {
+                        items: []
+                    }
+                };
+
+                cart.merchant_reference.orderid1 = cart.merchant_reference.orderid2 = cartObject.id;
+
+                    for (var i = 0; i < cartObject.items.length; i ++) {
+                        cart.cart.items.push(
+                            {
+                                reference: cartObject.id,
+                                name: cartObject.items[i].product.id,
+                                quantity: cartObject.items[i].quantity,
+                                ean: cartObject.items[i].product.id,
+                                uri: 'http://weizhen.me:9000/#!/products/' + cartObject.items[i].product.id,
+                                image_uri: cartObject.items[i].product.images[0].url,
+                                unit_price: cartObject.items[i].price.effectiveAmount,
+                                discount_rate: 0,
+                                tax_rate: parseInt(cartObject.items[i].price.effectiveAmount * 0.25, 10)
+                            }
+                        );
+                    }
+                    return cart;
+                }
+
+                function klarnaHandleError( response ) {
+ 
+                    if (
+                        ! angular.isObject( response.data ) ||
+                        ! response.data.message
+                        ) {
+                        return( $q.reject( 'An unknown error occurred.' ) );
+                    }
+                    // Otherwise, use expected error message.
+                    return( $q.reject( response.data.message ) );
+                }
+
+                function klarnarRender( response ) {
+                    console.log(response.data);
+                    return( response.data );
+                }
+
+            /* END of Klarna */
+
 
             function previewOrder (shipToFormValid, billToFormValid) {
                 var deferred = $q.defer();

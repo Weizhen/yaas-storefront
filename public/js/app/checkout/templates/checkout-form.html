@@ -155,6 +155,13 @@
     <div class="col-md-12 col-sm-12 checkout-cart" ng-show="displayCart" ui-view="checkoutcart"></div>
 </div>
 
+<div id="klarna-order" class=" hidden-xs hidden-sm">
+    <button class="btn btn-primary btn-lg btn-block"
+            id="klarna-order-btn" ng-click="klarnaCheckout(shipToForm.$valid, billToForm.$valid)">{{'KLARNA CHECKOUT' | translate}}
+    </button>
+    <div class="col-md-12 col-sm-12 checkout-cart" ng-show="klarnaready" ui-view="klarnacheckout"></div>
+</div>
+
 
 <ng-form ng-class="{'hidden-lg hidden-md': !displayCart}" name="paymentForm" novalidate autocomplete="on" ng-cloak>
 <div class="step step-3" ng-class="{'disabled' : !wiz.step2Done, 'done': wiz.step3Done}">
